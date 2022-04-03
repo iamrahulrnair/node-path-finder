@@ -1,17 +1,16 @@
 {
-  "name": "cloudsek",
+  "name": "cloudsek-projectv2",
   "version": "1.0.0",
-  "description": "",
+  "description": "web path brute forcer",
   "main": "script.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "nodejs",
+    "cli",
+    "webapp"
+  ],
+  "author": "iamrahulrnair",
   "license": "ISC",
   "dependencies": {
-    "args": "^5.0.1",
-    "axios": "^0.26.1",
     "inquirer": "^8.2.2",
     "node-fetch": "2.0"
   }
