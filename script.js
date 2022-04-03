@@ -1,8 +1,6 @@
 const inquirer = require('inquirer');
 const fs = require('fs');
-const readline = require('readline');
 const fetch = require('node-fetch');
-const { setTimeout } = require('timers');
 
 (async () => {
   try {
@@ -19,33 +17,60 @@ const { setTimeout } = require('timers');
       },
     ]);
 
-    // splitting and converting to one
+    let arr = []; // array buffer for holding 5 promises at a time
+    let filteredValues = []; // filtered values from promise.all()
+    const statusCodes = answer.statusCodes.split(',').map((el) => el * 1); // splitting and converting to INT
 
-    const statusCodes = answer.statusCodes.split(',').map((el) => el * 1);
-    const file = readline.createInterface({
-      input: fs.createReadStream(module.path + '/data/wordList.txt'),
-    });
-    const arr = [];
-    file.on('line', async (line) => {
-      await arr.push(
-        fetch(`${answer.domainName || 'https://github.com'}/${line}`)
-      );
-    });
-    file.on('close', async () => {
+    async function publishResponse() {
+      /**
+       * This handles all the promises in the buffer,
+       *  and appends to the file
+       */
       const values = await Promise.all(arr);
-      const filteredValues = values.filter((value) =>
+      filteredValues = await values.filter((value) =>
         statusCodes.includes(value.status)
       );
+
       filteredValues.map(({ status, url, statusText }) => {
         fs.appendFileSync(
           module.path + '/out/output.csv',
           [status, url, statusText].join(',') + '\n'
         );
-        console.log({ status, url, statusText });
       });
-    });
+    }
+
+    var lines = fs
+      .readFileSync(module.path + '/data/wordList.txt', 'utf-8')
+      .split('\n')
+      .filter(Boolean);
+
+    if (fs.existsSync(module.path + '/out/output.csv')) {
+      fs.writeFileSync(module.path + '/out/output.csv', '');
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      // for i  loop is promise aware
+
+      const line = lines[i];
+      arr.push(fetch(`${answer.domainName || 'https://github.com'}/${line}`));
+      if (arr.length % 5 == 0) {
+        await publishResponse();
+        while (arr.length > 0) {
+          arr.pop();
+        }
+      }
+    }
+
+    /**
+     * This call is made for arr.length % 5 != 0,
+     * ie,elements in the array buffer
+     *  */
+
+    await publishResponse();
   } catch (err) {
-    console.log(err);
+    console.log(
+      'Rate Limiter may be on, Please try other domain or after sometimes.'
+    );
   }
 })();
 
